@@ -171,13 +171,14 @@ var moonVertexTextureCoordBuffer;
 var moonVertexIndexBuffer;
 
 function initBuffers() {
-    var latitudeBands = 30;
-    var longitudeBands = 30;
+    var latitudeBands = 15;
+    var longitudeBands = 15;
     var radius = 1.3;
 
-    var vertexPositionData = [];
-    var normalData = [];
-    var textureCoordData = [];
+    
+    var vertexPositionData = []; //Mảng tọa độ đỉnh của các tam giác
+    var normalData = [];        //Mảng vecto pháp tuyến của các điểm
+    var textureCoordData = [];  //Mảng tọa độ kết cấu
     for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
         var theta = latNumber * Math.PI / latitudeBands;
         var sinTheta = Math.sin(theta);
@@ -204,7 +205,9 @@ function initBuffers() {
             vertexPositionData.push(radius * z);
         }
     }
-
+    //Khởi tạo và gán giá trị cho mảng chỉ s
+    //Nội dung của mảng là danh sách các tam giác.
+    //Mỗi nhóm là ba chỉ số điểm cho ba tọa độ đỉnh của tam giác
     var indexData = [];
     for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
         for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
@@ -250,11 +253,12 @@ function drawScene() {
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+    mat4.perspective(30, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
     var lighting = document.getElementById("lighting").checked;
     gl.uniform1i(shaderProgram.useLightingUniform, lighting);
     if (lighting) {
+    //Gán giá trị cho màu ambient
         gl.uniform3f(
             shaderProgram.ambientColorUniform,
             parseFloat(0.2),
@@ -262,12 +266,14 @@ function drawScene() {
             parseFloat(0.2)
 
         );
-
+        // Gán giá trị cho hướng nguồn sáng
         var lightingDirection = [
             parseFloat(-1.0),
             parseFloat(-1.0),
             parseFloat(-1.0)
         ];
+
+        //Chuẩn hóa vecto pháp tuyến
         var adjustedLD = vec3.create();
         vec3.normalize(lightingDirection, adjustedLD);
         vec3.scale(adjustedLD, -1);
@@ -285,19 +291,20 @@ function drawScene() {
     mat4.identity(mvMatrix);
 
     mat4.translate(mvMatrix, [0, 0, -6]);
-
+    //Xoay Mặt Trăng theo các trục
+    //-------------------------
     var newRotationMatrix = mat4.create();
     mat4.identity(newRotationMatrix);
-
+    
     mat4.rotate(newRotationMatrix, deltaY, [0, 1, 0]);
     mat4.rotate(newRotationMatrix, deltaX, [1, 0, 0]);
     mat4.rotate(newRotationMatrix, deltaZ, [0, 0, 1]);
-
+    
     mat4.multiply(newRotationMatrix, moonRotationMatrix, moonRotationMatrix);
-
-
+    
     mat4.multiply(mvMatrix, moonRotationMatrix);
-
+    //-------------------------
+    
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, moonTexture);
     gl.uniform1i(shaderProgram.samplerUniform, 0);
